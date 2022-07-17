@@ -1,7 +1,9 @@
 package com.fornary4.sunnyweather.ui.place
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
-import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,7 +13,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.fornary4.sunnyweather.MainActivity
 import com.fornary4.sunnyweather.databinding.FragmentPlaceBinding
+import com.fornary4.sunnyweather.ui.weather.WeatherActivity
 
 class PlaceFragment : Fragment() {
     private var _binding: FragmentPlaceBinding? = null
@@ -32,11 +36,26 @@ class PlaceFragment : Fragment() {
         return binding.root
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+
+        if (activity is MainActivity && viewModel.isPlaceSaved()) {
+            val place = viewModel.getSavedPlace()
+            val intent = Intent(context, WeatherActivity::class.java).apply {
+                putExtra("location_lng", place.location.lng)
+                putExtra("location_lat", place.location.lat)
+                putExtra("place_name", place.name)
+            }
+            startActivity(intent)
+            activity?.finish()
+            return
+        }
+
         val layoutManager = LinearLayoutManager(activity)
         binding.recyclerView.layoutManager = layoutManager
         adapter = PlaceAdapter(this, viewModel.placeList)
+        binding.recyclerView.adapter = adapter
         binding.searchPlaceEdit.addTextChangedListener { editable ->
             val content = editable.toString()
             if (content.isNotEmpty()) {
@@ -55,6 +74,9 @@ class PlaceFragment : Fragment() {
                 binding.bgImageView.visibility = View.GONE
                 viewModel.placeList.clear()
                 viewModel.placeList.addAll(places)
+                for (place in viewModel.placeList) {
+                    Log.d("forntag", place.toString())
+                }
                 adapter.notifyDataSetChanged()
             } else {
                 Toast.makeText(activity, "未能查询到任何地点", Toast.LENGTH_SHORT).show()
